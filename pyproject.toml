@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "RSschool_project"
+version = "0.1.0"
+description = ""
+authors = ["Tsenev Denis <cenev.denis@yandex.ru>"]
+
+[tool.poetry.scripts]
+train = "ForestType.train:train"
+test = "test:start"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pyglet = "^1.5.23"
+matplotlib = "^3.5.2"
+seaborn = "^0.11.2"
+sklearn = "^0.0"
+pandas = "^1.4.2"
+xgboost = "^1.6.0"
+train = "^0.0.5"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
