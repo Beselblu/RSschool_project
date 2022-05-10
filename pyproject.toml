@@ -5,7 +5,8 @@ description = ""
 authors = ["Tsenev Denis <cenev.denis@yandex.ru>"]
 
 [tool.poetry.scripts]
-train = "ForestType.train:train"
+train = "RSschool_project.train:train"
+test = "RSschool_project.test:start"
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -16,6 +17,8 @@ sklearn = "^0.0"
 pandas = "^1.4.2"
 xgboost = "^1.6.0"
 train = "^0.0.5"
+click = "^8.1.3"
+mlflow = "^1.25.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

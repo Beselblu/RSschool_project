@@ -12,7 +12,7 @@ from .data import get_dataset
 @click.option(
     "-d",
     "--dataset-path",
-    default="data/heart.csv",
+    default="data/test.csv",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     show_default=True,
 )
