@@ -13,7 +13,7 @@ from .pipeline import create_pipeline
 @click.option(
     "-d",
     "--dataset-path",
-    default="data/test.csv",
+    default="data/train.csv",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     show_default=True,
 )
@@ -37,13 +37,19 @@ from .pipeline import create_pipeline
     show_default=True,
 )
 @click.option(
-    "--use-standart-scaller",
+    "--use-feature-selection",
     default=True,
     type=bool,
     show_default=True,
 )
 @click.option(
-    "--use-minmax-scaller",
+    "--use-standart-scaler",
+    default=True,
+    type=bool,
+    show_default=True,
+)
+@click.option(
+    "--use-minmax-scaler",
     default=False,
     type=bool,
     show_default=True,
@@ -65,8 +71,9 @@ def train(
     save_model_path: Path,
     random_state: int,
     test_split_ratio: float,
-    use_standart_scaller: bool,
-    use_minmax_scaller: bool,
+    use_feature_selection: bool,
+    use_standart_scaler: bool,
+    use_minmax_scaler: bool,
     max_iter: int,
     logreg_c: float
 ) -> None:
@@ -76,15 +83,17 @@ def train(
         test_split_ratio)
     print('Done')
     with mlflow.start_run():
-        pipeline = create_pipeline(use_standart_scaller, use_minmax_scaller, max_iter, logreg_c, random_state)
+        pipeline = create_pipeline(use_feature_selection, use_standart_scaler, 
+        use_minmax_scaler, max_iter, logreg_c, random_state)
         pipeline.fit(features_train, target_train)
         accuracy = accuracy_score(target_val, pipeline.predict(features_val))
-        mlflow.log_param('StandartScaller', use_standart_scaller)
-        mlflow.log_param('MinMaxScaller', use_minmax_scaller)
+        mlflow.log_param('FeatureSelection', use_feature_selection)
+        mlflow.log_param('StandartScaler', use_standart_scaler)
+        mlflow.log_param('MinMaxScaler', use_minmax_scaler)
         mlflow.log_param('max_iter', max_iter)
         mlflow.log_param('logreg_c', logreg_c)
         mlflow.log_param('accuracy', accuracy)
-        click.echo(f"Accuracy: {accuracy}.")
+        click.echo(f"Accuracy: {round(accuracy, 5)}.")
         dump(pipeline, save_model_path)
         click.echo(f"Model is saved to {save_model_path}.")
 
