@@ -4,11 +4,11 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.feature_selection import VarianceThreshold
 
 def create_pipeline(
-    use_stdndart_scaller: bool, use_minmax_scaller: bool, max_iter:int,
+    use_standart_scaller: bool, use_minmax_scaller: bool, max_iter:int,
     logreg_C: float, random_state: int
 ) -> Pipeline:
     pipeline_steps = []
-    if use_stdndart_scaller:
+    if use_standart_scaller:
         pipeline_steps.append(('scaller', StandardScaler()))
     if use_minmax_scaller:
         pipeline_steps.append(('scaller', MinMaxScaler()))

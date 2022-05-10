@@ -25,14 +25,26 @@ from .pipeline import create_pipeline
     show_default=True
 )
 @click.option(
+    "--random-state",
+    default=42,
+    type=int,
+    show_default=True
+)
+@click.option(
     "--test-split-ratio",
     default=0.2,
     type=click.FloatRange(0, 1, min_open=True, max_open=True),
     show_default=True,
 )
 @click.option(
-    "--use-scaler",
+    "--use-standart-scaller",
     default=True,
+    type=bool,
+    show_default=True,
+)
+@click.option(
+    "--use-minmax-scaller",
+    default=False,
     type=bool,
     show_default=True,
 )
@@ -56,21 +68,21 @@ def train(
     use_standart_scaller: bool,
     use_minmax_scaller: bool,
     max_iter: int,
-    logreg_C: float
+    logreg_c: float
 ) -> None:
     features_train, features_val, target_train, target_val = get_dataset(
-        csv_path, 
+        dataset_path, 
         random_state, 
         test_split_ratio)
     print('Done')
     with mlflow.start_run():
-        pipeline = create_pipeline(use_stdndart_scaller, use_minmax_scaller, max_iter, logreg_C, random_state)
+        pipeline = create_pipeline(use_standart_scaller, use_minmax_scaller, max_iter, logreg_c, random_state)
         pipeline.fit(features_train, target_train)
         accuracy = accuracy_score(target_val, pipeline.predict(features_val))
         mlflow.log_param('StandartScaller', use_standart_scaller)
         mlflow.log_param('MinMaxScaller', use_minmax_scaller)
         mlflow.log_param('max_iter', max_iter)
-        mlflow.log_param('logreg_C', logreg_C)
+        mlflow.log_param('logreg_c', logreg_c)
         mlflow.log_param('accuracy', accuracy)
         click.echo(f"Accuracy: {accuracy}.")
         dump(pipeline, save_model_path)
