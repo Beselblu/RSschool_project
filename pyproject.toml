@@ -6,7 +6,6 @@ authors = ["Tsenev Denis <cenev.denis@yandex.ru>"]
 
 [tool.poetry.scripts]
 train = "ForestType.train:train"
-test = "test:start"
 
 [tool.poetry.dependencies]
 python = "^3.8"
