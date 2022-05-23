@@ -6,7 +6,7 @@ authors = ["Tsenev Denis <cenev.denis@yandex.ru>"]
 
 [tool.poetry.scripts]
 train = "RSschool_project.train:train"
-test = "RSschool_project.test:start"
+predict = "RSschool_project.predict:predict"
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -19,6 +19,7 @@ xgboost = "^1.6.0"
 train = "^0.0.5"
 click = "^8.1.3"
 mlflow = "^1.25.1"
+Boruta = "^0.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

@@ -1,13 +1,12 @@
 from pathlib import Path
-from joblib import dump
-
 import click
-import mlflow
-import mlflow.sklearn
-from sklearn.metrics import accuracy_score
-
 from .data import get_dataset
-from .pipeline import create_pipeline
+from .pipeline import create_pipeline, save_pipeline
+from .model import nestedCV, get_tuned_model, save_model
+import mlflow
+from typing import Any
+import numpy as np
+
 
 @click.command()
 @click.option(
@@ -15,6 +14,7 @@ from .pipeline import create_pipeline
     "--dataset-path",
     default="data/train.csv",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="Path to the dataset",
     show_default=True,
 )
 @click.option(
@@ -22,78 +22,85 @@ from .pipeline import create_pipeline
     "--save-model-path",
     default="data/model.joblib",
     type=click.Path(dir_okay=False, writable=True, path_type=Path),
-    show_default=True
-)
-@click.option(
-    "--random-state",
-    default=42,
-    type=int,
-    show_default=True
-)
-@click.option(
-    "--test-split-ratio",
-    default=0.2,
-    type=click.FloatRange(0, 1, min_open=True, max_open=True),
+    help="Path to the model to save",
     show_default=True,
 )
 @click.option(
-    "--use-feature-selection",
-    default=True,
-    type=bool,
+    "--save-pipeline-path",
+    default="data/pipeline.joblib",
+    type=click.Path(dir_okay=False, writable=True, path_type=Path),
+    help="Path to the pipeline to save",
     show_default=True,
 )
 @click.option(
-    "--use-standart-scaler",
-    default=True,
-    type=bool,
+    "--model-name",
+    default="rf",
+    type=click.Choice(["rf", "lr"]),
+    help="Model for evaluation",
     show_default=True,
 )
 @click.option(
-    "--use-minmax-scaler",
+    "--random-state", default=4, type=int, help="Random state", show_default=True
+)
+@click.option(
+    "--use-scaler",
     default=False,
     type=bool,
+    help="flag to use scaler for dataset",
     show_default=True,
 )
 @click.option(
-    "--max-iter",
-    default=100,
-    type=int,
-    show_default=True,
-)
-@click.option(
-    "--logreg-c",
-    default=1.0,
-    type=float,
+    "--use-boruta",
+    default=False,
+    type=bool,
+    help="flag to use boruta feature selection algorithm",
     show_default=True,
 )
 def train(
     dataset_path: Path,
     save_model_path: Path,
+    save_pipeline_path: Path,
+    model_name: str,
     random_state: int,
-    test_split_ratio: float,
-    use_feature_selection: bool,
-    use_standart_scaler: bool,
-    use_minmax_scaler: bool,
-    max_iter: int,
-    logreg_c: float
+    use_scaler: bool,
+    use_boruta: bool,
 ) -> None:
-    features_train, features_val, target_train, target_val = get_dataset(
-        dataset_path, 
-        random_state, 
-        test_split_ratio)
-    print('Done')
-    with mlflow.start_run():
-        pipeline = create_pipeline(use_feature_selection, use_standart_scaler, 
-        use_minmax_scaler, max_iter, logreg_c, random_state)
-        pipeline.fit(features_train, target_train)
-        accuracy = accuracy_score(target_val, pipeline.predict(features_val))
-        mlflow.log_param('FeatureSelection', use_feature_selection)
-        mlflow.log_param('StandartScaler', use_standart_scaler)
-        mlflow.log_param('MinMaxScaler', use_minmax_scaler)
-        mlflow.log_param('max_iter', max_iter)
-        mlflow.log_param('logreg_c', logreg_c)
-        mlflow.log_param('accuracy', accuracy)
-        click.echo(f"Accuracy: {round(accuracy, 5)}.")
-        dump(pipeline, save_model_path)
-        click.echo(f"Model is saved to {save_model_path}.")
+    features, target = get_dataset(dataset_path)
 
+    with mlflow.start_run():
+        if use_boruta | use_scaler:
+            pipeline = create_pipeline(use_scaler=use_scaler, use_boruta=use_boruta)
+            features = pipeline.fit_transform(features, target)
+            save_pipeline(pipeline, save_pipeline_path)
+
+        accuracy, precision_macro, macro_averaged_f1 = nestedCV(
+            model_name, features, target, random_state, scoring="accuracy"
+        )
+
+        model, params = get_tuned_model(model_name, features, target, random_state)
+
+        log_metrics(accuracy, precision_macro, macro_averaged_f1)
+        log_params(params, use_scaler, use_boruta, model_name)
+
+        click.echo(f"Accuracy: {accuracy}.")
+        click.echo(f"precision_macro: {precision_macro}.")
+        click.echo(f"macro_averaged_f1: {macro_averaged_f1}.")
+
+        save_model(model, save_model_path)
+
+
+def log_metrics(
+    accuracy: float, precision_macro: float, macro_averaged_f1: float
+) -> None:
+    mlflow.log_metric("accuracy", accuracy)
+    mlflow.log_metric("precision_macro", precision_macro)
+    mlflow.log_metric("macro_averaged_f1", macro_averaged_f1)
+
+
+def log_params(
+    params: dict[str, Any], use_scaler: bool, use_boruta: bool, model_name: str
+) -> None:
+    mlflow.log_params(params)
+    mlflow.log_param("use_scaler", use_scaler)
+    mlflow.log_param("use_boruta", use_boruta)
+    mlflow.log_param("model_name", model_name)
